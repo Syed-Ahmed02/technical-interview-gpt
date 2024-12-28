@@ -15,16 +15,23 @@ type RequestFormProps = {
 const RequestForm: React.FC<RequestFormProps> = ({ fromData, setFormData, setIsLoading }) => {
     const [file, setFile] = useState<File | null>(null)
     const [jobDescriptionUrl, setJobDescriptionUrl] = useState('');
+    const [error, setError] = useState("")
+    const handleSubmission = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
-    const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const uploadedFile = e?.target.files?.[0]
+        setError('')
         setIsLoading(true)
-        if (!uploadedFile) {
-            console.log("No file")
-            return
+        try {
+            const uploadedFile = e?.target.files?.[0]
+            if (!uploadedFile) {
+                console.log("No file")
+                return
+            }
+            setFile(uploadedFile)
+            await scrapeJobDescription(jobDescriptionUrl)
+            
+        } catch {
+            setError("No File")
         }
-
-        setFile(uploadedFile)
         return
     }
 
@@ -34,12 +41,12 @@ const RequestForm: React.FC<RequestFormProps> = ({ fromData, setFormData, setIsL
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(url)
+            body: JSON.stringify({url})
         })
         const resData = await res.json();
         setFormData(data => ({
             ...data,
-            jobDescriptionText: resData.textContent
+            jobDescription: resData.textContent
         }))
     }
 
@@ -60,12 +67,12 @@ const RequestForm: React.FC<RequestFormProps> = ({ fromData, setFormData, setIsL
                     type="file"
                     value={undefined}
                     className=""
-                    onChange={handleResumeUpload}
+                    onChange={handleSubmission}
                     hidden
                     id="file-upload"
                 />
                 <label htmlFor="file-upload" className=''>Upload Resume</label>
-            </div>    
+            </div>
         </div>
     )
 }

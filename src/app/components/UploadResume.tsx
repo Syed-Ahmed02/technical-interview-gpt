@@ -1,30 +1,29 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import RequestForm from './RequestForm'
 
 const UploadResume: React.FC = () => {
-    const [file, setFile] = useState<File | null>(null)
-    const [jobDescription, setJobDescription] = useState('')
+    const [loading,setIsLoading] = useState(false)    
+    const [showChat,setShowChat] = useState(false)
+    const [interviewData, setInterviewData] = useState<{
+        file: File | null,
+        jobDescription: string
+    }>
+    ({
+        file: null,
+        jobDescription:""
+    })
 
-    const handleResumeUpload = async (e:React.ChangeEvent<HTMLInputElement>) =>{
-        const uploadedFile = e?.target.files?.[0]
-        if(!uploadedFile){
-            console.log("No file")
-            return 
+    useEffect(()=>{
+        if(loading && interviewData.jobDescription !== "") {
+            setShowChat(true)
         }
-        setFile(uploadedFile)
-        return 
-    }
-
-    const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        console.log(file)
-
-    }
+    },[interviewData.jobDescription])
 
     return (
         <div className=''>
-          <RequestForm setFormData={null} setIsLoading={true} />
+          {!loading && <RequestForm fromData={interviewData} setFormData={setInterviewData} setIsLoading={setIsLoading} />}
+          {showChat && <p>Sup chat {interviewData.jobDescription}</p>}
         </div>
     )
 }
