@@ -1,17 +1,20 @@
 "use client"
 import React, { useEffect, useState } from 'react'
 import RequestForm from './RequestForm'
-
+import { webrtc } from '../utils/webrtc'
+import Chat from './Chat'
 const UploadResume: React.FC = () => {
     const [loading,setIsLoading] = useState(false)    
     const [showChat,setShowChat] = useState(false)
     const [interviewData, setInterviewData] = useState<{
         file: File | null,
         jobDescription: string
+        interviewType:string
     }>
     ({
         file: null,
-        jobDescription:""
+        jobDescription:"",
+        interviewType:""
     })
 
     useEffect(()=>{
@@ -20,10 +23,16 @@ const UploadResume: React.FC = () => {
         }
     },[interviewData.jobDescription])
 
+    useEffect(()=>{
+        if(showChat) {
+            webrtc();
+        }
+    },[showChat])
+
     return (
         <div className=''>
           {!loading && <RequestForm fromData={interviewData} setFormData={setInterviewData} setIsLoading={setIsLoading} />}
-          {showChat && <p>Sup chat {interviewData.jobDescription}</p>}
+          {showChat && <Chat/>}
         </div>
     )
 }

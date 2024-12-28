@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@types/dom-speech-recognition':
+        specifier: ^0.0.4
+        version: 0.0.4
       next:
         specifier: 15.1.2
         version: 15.1.2(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -340,6 +343,9 @@ packages:
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
+
+  '@types/dom-speech-recognition@0.0.4':
+    resolution: {integrity: sha512-zf2GwV/G6TdaLwpLDcGTIkHnXf8JEf/viMux+khqKQKDa8/8BAUtXXZS563GnvJ4Fg0PBLGAaFf2GekEVSZ6GQ==}
 
   '@types/estree@1.0.6':
     resolution: {integrity: sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==}
@@ -2187,6 +2193,8 @@ snapshots:
       tslib: 2.8.1
 
   '@tootallnate/quickjs-emscripten@0.23.0': {}
+
+  '@types/dom-speech-recognition@0.0.4': {}
 
   '@types/estree@1.0.6': {}
 
