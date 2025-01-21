@@ -11,6 +11,7 @@
   "dependencies": {
     "@types/dom-speech-recognition": "^0.0.4",
     "next": "15.1.2",
+    "openai": "^4.79.1",
     "puppeteer": "^23.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
