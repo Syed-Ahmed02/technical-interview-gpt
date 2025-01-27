@@ -6,14 +6,15 @@ export async function POST(req: NextRequest) {
     try {
         const response = await req.json()
         const { file } = response
+        console.log(file)
         const assistant = await openai.beta.assistants.create({
-            name: "Financial Analyst Assistant",
-            instructions: "You are an expert financial analyst. Use you knowledge base to answer questions about audited financial statements.",
+            name: "Resume Analst",
+            instructions: "You are a hiring manager tasked with looking at resumes. Use the resume data and ask questions",
             model: "gpt-4o",
             tools: [{ type: "file_search" }],
         });
         let vectorStore = await openai.beta.vectorStores.create({
-            name: "",
+            name: "resume",
         });
 
         await openai.beta.vectorStores.fileBatches.uploadAndPoll(vectorStore.id, file)
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
             tool_resources: { file_search: { vector_store_ids: [vectorStore.id] } },
         });
 
-        return NextResponse.json(assistant);
+        return NextResponse.json(vectorStore.id);
     } catch (error) {
         console.error("Error fetching session data:", error);
         return NextResponse.json({ error: "Failed to fetch session data" }, { status: 500 });

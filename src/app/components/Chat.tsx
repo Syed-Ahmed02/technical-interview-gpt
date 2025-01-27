@@ -16,16 +16,35 @@ const Chat: React.FC<ChatProps> = ({resumeData,jobDescription}) => {
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
     
     useEffect(() => {
+        console.log("Chat",resumeData)
         return () => stopSession();
     }, []);
 
+
+    const getVectorId = async () =>{
+        console.log(resumeData)
+        const res = await fetch("/api/openai/vectorstore",{
+            method:"POST",
+            body:JSON.stringify({file:resumeData}),
+            headers:{
+                'Content-Type':'application/json',
+            }
+        })
+        const id = await res.json()
+        return id
+    }
+
+
     const getEmphemeralToken = async () => {
         const INSTRUCTIONS = `
-                Your name is John, a interviewer at a company. I will give you a job description and a resume based on which you will ask me questions, 
-                after each question you will provide me feedback. Start with asking me how my day is going.`
+                Your name is John, a behavioural interviewer at a company. I will give you a job description and a resume based on which you will ask me questions, 
+                after each question you will provide me feedback. Start with asking me how my day is going.
+                Here is the job description ${jobDescription}`
+
+        const vectorStoreId = getVectorId();
         const res = await fetch("/api/openai/session", {
             method: "POST",
-            body:JSON.stringify(INSTRUCTIONS),
+            body:JSON.stringify({instructions:INSTRUCTIONS, vectorStoreId:vectorStoreId}),
             headers: {
                 'Content-Type': 'application/json'
             }

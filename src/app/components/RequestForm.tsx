@@ -34,7 +34,11 @@ const RequestForm: React.FC<RequestFormProps> = ({ fromData, setFormData, setIsL
                 console.log("No file")
                 return
             }
-            setFile(uploadedFile)
+            console.log("Request Form",uploadedFile)
+            setFormData(data => ({
+                ...data,
+                file: uploadedFile
+            }))
             await scrapeJobDescription(jobDescriptionUrl)
 
         } catch {

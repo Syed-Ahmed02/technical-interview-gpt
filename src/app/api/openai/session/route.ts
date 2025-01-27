@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(req:NextRequest) {
+export async function POST(req: NextRequest) {
     const response = await req.json();
-    const {instructions} = response
-    try {        
-        if (!process.env.OPENAI_API_KEY){
+    const { instructions, vectorStoreId } = response
+    try {
+        if (!process.env.OPENAI_API_KEY) {
             throw new Error(`OPENAI_API_KEY is not set`);
 
         }
+
         const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
             method: "POST",
             headers: {
@@ -17,8 +18,13 @@ export async function POST(req:NextRequest) {
             body: JSON.stringify({
                 model: "gpt-4o-realtime-preview-2024-12-17",
                 voice: "alloy",
-                instructions:instructions,
-               
+                instructions: instructions,
+                tools: [
+                    {
+                        type: "file_search",
+                        vector_store_ids: [vectorStoreId],
+                    },
+                ],
             }),
         });
 

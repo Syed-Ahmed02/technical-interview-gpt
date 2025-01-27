@@ -18,6 +18,7 @@ const UploadResume: React.FC = () => {
 
     useEffect(()=>{
         if(loading && interviewData.jobDescription !== "") {
+            console.log("UPLOAD",interviewData.file)
             setShowChat(true)
         }
     },[interviewData.jobDescription])
