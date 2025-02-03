@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
             throw new Error(`OPENAI_API_KEY is not set`);
 
         }
-
+        console.log(vectorStoreId)
         const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
             method: "POST",
             headers: {
@@ -19,12 +19,15 @@ export async function POST(req: NextRequest) {
                 model: "gpt-4o-realtime-preview-2024-12-17",
                 voice: "alloy",
                 instructions: instructions,
-                tools: [
-                    {
-                        type: "file_search",
-                        vector_store_ids: [vectorStoreId],
-                    },
-                ],
+                // tools: [{ "type": "file_search" , }],
+                // tool_resources: {
+                //     "file_search": {
+                //         "vector_store_ids": [vectorStoreId]
+                //     },
+                // }
+                input_audio_transcription:{
+                    model:"whisper-1"
+                }
             }),
         });
 
@@ -33,7 +36,7 @@ export async function POST(req: NextRequest) {
         }
 
         const data = await response.json();
-
+        console.log(data)
         // Return the JSON response to the client
         return NextResponse.json(data);
     } catch (error) {
