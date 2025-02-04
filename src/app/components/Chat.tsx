@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-
+import { analyzeAudio } from "../lib/audioThreshhold";
 type ChatProps = {
-    resumeData: File;
+    interviewType:string;
     jobDescription: string;
 };
 
@@ -16,7 +16,7 @@ type Message = {
     content: string;
 };
 
-const Chat: React.FC<ChatProps> = ({ resumeData, jobDescription }) => {
+const Chat: React.FC<ChatProps> = ({ interviewType, jobDescription }) => {
     const [status, setStatus] = useState("");
     const [isSessionActive, setIsSessionActive] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -41,9 +41,27 @@ const Chat: React.FC<ChatProps> = ({ resumeData, jobDescription }) => {
 
     const getEmphemeralToken = async () => {
         const INSTRUCTIONS = `
-            Your name is John, a behavioural interviewer at a company. I will give you a job description and a resume based on which you will ask me questions, 
-            after each question you will provide me feedback. Start by introducing yourself and ask how my day is going.
-            Here is the job description ${jobDescription}`;
+        SYSTEM SETTINGS:
+        ------
+        INSTRUCTIONS:
+        - Your name is John, an artificial intelligence agent responsible to interview canidates.
+        - You will recieve a job description, and an interview type (behavioural or technical).
+        - Start by introducing yourself
+        - Please ask the user 3 questions, after asking the questions you will provide the user on feedback
+        - Your feedback should be concise and to the point. It should also give improvements for the user to work on
+        ------
+        PERSONALITY:
+        - Be upbeat and genuine
+        - Speek fast if user gives a good answer
+        
+        ------
+        Interview Type:
+        ${jobDescription}
+        ------
+        JOB DESCRIPTION:
+        ${jobDescription}
+
+        `;
 
         const res = await fetch("/api/openai/session", {
             method: "POST",
@@ -68,6 +86,10 @@ const Chat: React.FC<ChatProps> = ({ resumeData, jobDescription }) => {
                 throw new Error("Microphone access denied. Please allow microphone access to continue.");
             });
             audioStreamRef.current = stream;
+
+            // Analyze audio and set up threshold
+            const { audioContext } = analyzeAudio(stream);
+            audioContextRef.current = audioContext;
 
             const ephemeralToken = await getEmphemeralToken().catch((err) => {
                 throw new Error("Failed to fetch ephemeral token. Please try again.");
@@ -114,7 +136,7 @@ const Chat: React.FC<ChatProps> = ({ resumeData, jobDescription }) => {
             peerConnectionRef.current = pc;
 
             setIsSessionActive(true);
-            setStatus("Connection Established Successfully");
+            setStatus("Connection Established Successfully. Say Hello!");
         } catch (err) {
             console.error(err);
             if (err instanceof Error) {
@@ -160,33 +182,59 @@ const Chat: React.FC<ChatProps> = ({ resumeData, jobDescription }) => {
 
         const handleMessage = (e: MessageEvent) => {
             const event = JSON.parse(e.data);
-            // Handle different types of events
-            if (event.type === 'text') {
-                // Assistant's message
-                setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: event.data.text
-                }]);
-            } else if (event.type === 'transcript') {
-                // User's transcribed message
+
+            console.log("Received event:", event); // Debugging
+
+            // Handle user's transcribed message
+            if (event.type === 'conversation.item.input_audio_transcription.completed') {
+                const userMessage = event.transcript;
                 setMessages(prev => [...prev, {
                     role: 'user',
-                    content: event.data.text
+                    content: userMessage
                 }]);
+            }
+
+            // Handle assistant's response (delta updates)
+            if (event.type === 'response.audio_transcript.delta') {
+                const assistantMessage = event.delta;
+                setMessages(prev => {
+                    const lastMessage = prev[prev.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                        // Append the delta to the last assistant message
+                        return [
+                            ...prev.slice(0, -1),
+                            { ...lastMessage, content: lastMessage.content + assistantMessage }
+                        ];
+                    } else {
+                        // Create a new assistant message
+                        return [...prev, { role: 'assistant', content: assistantMessage }];
+                    }
+                });
+            }
+
+            // Handle final assistant response (done event)
+            if (event.type === 'response.audio_transcript.done') {
+                const assistantMessage = event.transcript;
+                setMessages(prev => {
+                    const lastMessage = prev[prev.length - 1];
+                    if (lastMessage && lastMessage.role === 'assistant') {
+                        // Replace the last assistant message with the final transcript
+                        return [
+                            ...prev.slice(0, -1),
+                            { ...lastMessage, content: assistantMessage }
+                        ];
+                    } else {
+                        // Create a new assistant message
+                        return [...prev, { role: 'assistant', content: assistantMessage }];
+                    }
+                });
             }
         };
 
-        const handleOpen = () => {
-            setIsSessionActive(true);
-            setMessages([]);
-        };
-
         dataChannel.addEventListener("message", handleMessage);
-        dataChannel.addEventListener("open", handleOpen);
 
         return () => {
             dataChannel.removeEventListener("message", handleMessage);
-            dataChannel.removeEventListener("open", handleOpen);
         };
     }, [dataChannel]);
 
@@ -199,37 +247,40 @@ const Chat: React.FC<ChatProps> = ({ resumeData, jobDescription }) => {
     };
 
     return (
-        <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 border border-red-200 rounded-lg p-8 drop-shadow-2xl flex flex-col space-y-4 w-full max-w-2xl">
+        <div className="bg-gradient-to-br from-neutral-950 to-neutral-800 border border-red-200 rounded-lg p-8 drop-shadow-2xl flex flex-col space-y-4 w-96">
             <button
-                className="bg-white border rounded-lg border-white text-black w-fit mx-auto p-3"
+                className="bg-white border rounded-lg border-white text-black w-full mx-auto p-3"
                 onClick={handleStartStop}
                 disabled={status.includes("Establishing") || status.includes("Requesting")}
                 aria-label={isSessionActive ? "Stop Talking" : "Start Talking"}
             >
                 {isSessionActive ? "Stop Talking" : "Start Talking"}
             </button>
-            
+
             {status && (
                 <div className="text-white text-center">{status}</div>
             )}
-            
+
             <div className="flex-1 overflow-y-auto max-h-96 space-y-4 p-4 bg-neutral-900 rounded-lg">
                 {messages.map((message, index) => (
-                    <div
-                        key={index}
-                        className={`p-3 rounded-lg ${
-                            message.role === 'assistant'
-                                ? 'bg-blue-600 ml-4'
-                                : 'bg-neutral-700 mr-4'
-                        }`}
-                    >
-                        <div className="text-white">{message.content}</div>
+                    <div key={index} className={`flex flex-col ${message.role === 'assistant' ? 'items-end' : 'items-start'}`}>
+                        <div className="text-white mb-1">
+                            {message.role === 'assistant' ? 'John' : 'User'}
+                        </div>
+                        <div
+                            className={`p-3 rounded-lg ${message.role === 'assistant'
+                                ? 'bg-blue-600'
+                                : 'bg-neutral-700'
+                                }`}
+                        >
+                            <div className="text-white">{message.content}</div>
+                        </div>
                     </div>
+
                 ))}
                 <div ref={messagesEndRef} />
             </div>
         </div>
     );
-};
-
+}
 export default Chat;

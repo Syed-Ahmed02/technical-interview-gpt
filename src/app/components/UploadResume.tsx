@@ -2,23 +2,21 @@
 import React, { useEffect, useState } from 'react'
 import RequestForm from './RequestForm'
 import Chat from './Chat'
+import Loading from './Loading'
 const UploadResume: React.FC = () => {
     const [loading,setIsLoading] = useState(false)    
     const [showChat,setShowChat] = useState(false)
     const [interviewData, setInterviewData] = useState<{
-        file: File | null,
         jobDescription: string
         interviewType:string
     }>
     ({
-        file: null,
         jobDescription:"",
         interviewType:""
     })
 
     useEffect(()=>{
         if(loading && interviewData.jobDescription !== "") {
-            console.log("UPLOAD",interviewData.file)
             setShowChat(true)
         }
     },[interviewData.jobDescription])
@@ -27,7 +25,8 @@ const UploadResume: React.FC = () => {
     return (
         <div className=''>
           {!loading && <RequestForm fromData={interviewData} setFormData={setInterviewData} setIsLoading={setIsLoading} />}
-          {showChat && <Chat jobDescription={interviewData.jobDescription} resumeData={interviewData.file!} />}
+          {loading && !showChat && <Loading/>}
+          {showChat && <Chat jobDescription={interviewData.jobDescription} interviewType={interviewData.interviewType} />}
         </div>
     )
 }
