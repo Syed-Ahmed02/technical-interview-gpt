@@ -1,74 +1,67 @@
-// Import Puppeteer and types from Next.js
+// Import Puppeteer-core, Chromium for Vercel, and Next.js types
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
-import type { Browser } from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
 
-// Define a type for the request body
-type RequestBody = {
-  url: string;
-};
+type RequestBody = { url: string };
 
-// This function handles the POST request
+// Handle the POST request
 export async function POST(req: NextRequest) {
-  // Parse the request body to get the URL
   const body: RequestBody = await req.json();
   const { url } = body;
+
   if (!url) {
     return new NextResponse(JSON.stringify({ error: 'URL is required' }), {
       status: 400,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 
   try {
     const textContent = await scrapeAllTextWithPuppeteer(url);
-
+    
     if (textContent) {
       return new NextResponse(JSON.stringify({ textContent }), {
         status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
     } else {
-      return new NextResponse(JSON.stringify({ error: 'Failed to scrape the text content' }), {
+      return new NextResponse(JSON.stringify({ error: 'Failed to scrape text content' }), {
         status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
     }
   } catch (error) {
+    console.error('Error during scraping:', error);
     return new NextResponse(JSON.stringify({ error: 'An error occurred during scraping' }), {
       status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }
 
+// Scraper function using Puppeteer with Chromium for Vercel
 async function scrapeAllTextWithPuppeteer(url: string): Promise<string | null> {
-  let browser: Browser | null = null;
+  let browser = null;
 
   try {
-    browser = await puppeteer.launch();
+    browser = await puppeteer.launch({
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless === "shell" ? true : false, // ✅ Correct handling
+    });
+
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const textContent = await page.evaluate(() => document.body.innerText);
-
-    // Optional: clean up the text content
-    const cleanedText = textContent.replace(/\s+/g, ' ').trim();
-
-    return cleanedText;
+    return textContent.replace(/\s+/g, ' ').trim();
   } catch (error) {
     console.error("Error scraping with Puppeteer:", error);
     return null;
   } finally {
-    await browser?.close();
+    if (browser) await browser.close();
   }
 }

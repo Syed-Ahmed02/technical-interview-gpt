@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^132.0.0",
     "@types/dom-speech-recognition": "^0.0.4",
     "next": "15.1.2",
     "openai": "^4.79.1",
