@@ -13,6 +13,7 @@
     "next": "15.1.2",
     "openai": "^4.79.1",
     "puppeteer": "^23.11.1",
+    "puppeteer-core": "^24.1.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-feather": "^2.0.10",
