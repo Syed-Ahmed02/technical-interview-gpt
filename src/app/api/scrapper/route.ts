@@ -1,17 +1,13 @@
-// Import Puppeteer and types from Next.js
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
-import type { Browser } from 'puppeteer';
+import * as cheerio from 'cheerio';
+export const runtime = 'edge';
 
-// Define a type for the request body
 type RequestBody = {
   url: string;
 };
 
-// This function handles the POST request
 export async function POST(req: NextRequest) {
-  // Parse the request body to get the URL
   const body: RequestBody = await req.json();
   const { url } = body;
 
@@ -24,52 +20,37 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  try {
-    const textContent = await scrapeAllTextWithPuppeteer(url);
+  const scrapingAntApiKey = process.env.SCRAPINGANT_API_KEY;
+  const apiEndpoint = `https://api.scrapingant.com/v2/general?url=${encodeURIComponent(url)}&x-api-key=${scrapingAntApiKey}&browser=false&block_resource=stylesheet&block_resource=image&block_resource=media&block_resource=font&block_resource=texttrack&block_resource=xhr&block_resource=fetch&block_resource=eventsource&block_resource=websocket&block_resource=manifest&block_resource=manifest`;
 
-    if (textContent) {
-      return new NextResponse(JSON.stringify({ textContent }), {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-    } else {
-      return new NextResponse(JSON.stringify({ error: 'Failed to scrape the text content' }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+  try {
+    const response = await fetch(apiEndpoint);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const htmlContent = await response.text();
+
+    // Parse the HTML content using cheerio
+    const $ = cheerio.load(htmlContent);
+    const textContent = $('body').text();
+
+    // Clean up the text content
+    const cleanedText = textContent.replace(/\s+/g, ' ').trim();
+    console.log(cleanedText)
+    return new NextResponse(JSON.stringify({ textContent: cleanedText }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   } catch (error) {
-    return new NextResponse(JSON.stringify({ error: 'An error occurred during scraping' }), {
+    console.error('Error while calling ScrapingAnt:', error);
+    return new NextResponse(JSON.stringify({ error: 'An error occurred during scraping', details: error }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json',
       },
     });
-  }
-}
-
-async function scrapeAllTextWithPuppeteer(url: string): Promise<string | null> {
-  let browser: Browser | null = null;
-
-  try {
-    browser = await puppeteer.launch();
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    const textContent = await page.evaluate(() => document.body.innerText);
-
-    // Optional: clean up the text content
-    const cleanedText = textContent.replace(/\s+/g, ' ').trim();
-
-    return cleanedText;
-  } catch (error) {
-    console.error("Error scraping with Puppeteer:", error);
-    return null;
-  } finally {
-    await browser?.close();
   }
 }
