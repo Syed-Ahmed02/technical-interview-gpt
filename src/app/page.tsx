@@ -9,7 +9,7 @@ export default function Home() {
           <h1 className="text-3xl text-white text-bold">
             Pratice your interview skills with a personal AI Interviewer
           </h1>
-          <h2 className="text-xl   ">
+          <h2 className="text-xl">
             Just paste the job url & choose your type of interview below
           </h2>
         </div>
